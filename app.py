@@ -14,7 +14,15 @@ os.environ.setdefault("YOLO_CONFIG_DIR", str(ROOT / ".ultralytics"))
 import numpy as np
 import streamlit as st
 from PIL import Image
-from ultralytics import YOLO
+
+try:
+    from ultralytics import YOLO
+    ULTRALYTICS_AVAILABLE = True
+except ImportError as e:
+    st.error(f"Failed to import ultralytics: {e}")
+    st.error("Please check that all dependencies are installed correctly.")
+    ULTRALYTICS_AVAILABLE = False
+    YOLO = None
 
 try:
     import av
@@ -32,12 +40,22 @@ BASE_CLASSIFY_MODEL = MODELS / "yolov8n-cls.pt"
 
 
 @st.cache_resource
-def load_model(path: str) -> YOLO:
+def load_model(path: str):
+    if not ULTRALYTICS_AVAILABLE:
+        return None
     return YOLO(path)
 
 
 def classify_image(image: Image.Image, model_path: Path) -> None:
+    if not ULTRALYTICS_AVAILABLE:
+        st.error("YOLO model not available. Please check dependencies.")
+        return
+    
     model = load_model(str(model_path))
+    if model is None:
+        st.error("Failed to load model.")
+        return
+        
     result = model.predict(np.array(image), imgsz=224, verbose=False)[0]
     probs = result.probs
     top1 = int(probs.top1)
@@ -52,17 +70,30 @@ def classify_image(image: Image.Image, model_path: Path) -> None:
 
 
 def detect_image(image: Image.Image, model_path: Path, confidence: float) -> None:
+    if not ULTRALYTICS_AVAILABLE:
+        st.error("YOLO model not available. Please check dependencies.")
+        return
+        
     model = load_model(str(model_path))
+    if model is None:
+        st.error("Failed to load model.")
+        return
+        
     result = model.predict(np.array(image), conf=confidence, imgsz=640, verbose=False)[0]
     st.image(result.plot(), channels="BGR", use_container_width=True)
 
 
 class DetectorVideoProcessor(VideoProcessorBase):
     def __init__(self, model_path: str, confidence: float) -> None:
-        self.model = YOLO(model_path)
+        if not ULTRALYTICS_AVAILABLE:
+            self.model = None
+        else:
+            self.model = YOLO(model_path)
         self.confidence = confidence
 
     def recv(self, frame):
+        if self.model is None:
+            return frame  # Return original frame if model not available
         image = frame.to_ndarray(format="bgr24")
         result = self.model.predict(image, conf=self.confidence, imgsz=640, verbose=False)[0]
         annotated = result.plot()
@@ -72,6 +103,10 @@ class DetectorVideoProcessor(VideoProcessorBase):
 def main() -> None:
     st.set_page_config(page_title="Fruit YOLOv8n", layout="wide")
     st.title("Fruit YOLOv8n")
+
+    if not ULTRALYTICS_AVAILABLE:
+        st.error("YOLO dependencies not available. The app cannot function without ultralytics.")
+        st.stop()
 
     mode = st.sidebar.radio("Mode", ["Spoilage classifier", "Fruit detector"])
     confidence = st.sidebar.slider("Confidence", 0.10, 0.90, 0.35, 0.05)
