@@ -3,6 +3,11 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+# Set environment variables for headless OpenCV before any imports
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+os.environ.setdefault("DISPLAY", "")
+os.environ.setdefault("OPENCV_HEADLESS", "1")
+
 ROOT = Path(__file__).resolve().parent
 os.environ.setdefault("YOLO_CONFIG_DIR", str(ROOT / ".ultralytics"))
 
