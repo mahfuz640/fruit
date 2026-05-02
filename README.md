@@ -58,5 +58,5 @@ detection dataset. Fresh/rotten prediction uses `yolov8n-cls.pt`; object boxes u
 pretrained COCO `yolov8n.pt`.
 
 sudo apt update
-sudo apt install -y python3-pip python3-smbus i2c-tools
+sudo apt install -y python3-pip python3-smbus i2c-tools libgl1
 python3 -m pip install RPi.GPIO Adafruit_DHT smbus2
