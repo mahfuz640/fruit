@@ -48,8 +48,8 @@ python scripts/webcam_detect.py --mode detect
 ## Deployment Notes
 
 - For Streamlit Cloud deployment, `opencv-python-headless` is used instead of `opencv-python` to avoid GUI library dependencies
-- `packages.txt` contains system-level dependencies required for OpenCV
 - Environment variables are set in `app.py` to ensure headless operation
+- The app includes graceful error handling if ultralytics fails to import
 - The app uses YOLOv8n models for fruit detection and spoilage classification
 - Models are loaded from the `models/` directory
 
