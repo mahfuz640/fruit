@@ -45,6 +45,12 @@ python scripts/webcam_detect.py --mode classify
 python scripts/webcam_detect.py --mode detect
 ```
 
+## Deployment Notes
+
+- For Streamlit Cloud deployment, `opencv-python-headless` is used instead of `opencv-python` to avoid GUI library dependencies
+- The app uses YOLOv8n models for fruit detection and spoilage classification
+- Models are loaded from the `models/` directory
+
 Important: `dataset.zip` is an image classification dataset, not a YOLO bounding-box
 detection dataset. Fresh/rotten prediction uses `yolov8n-cls.pt`; object boxes use the
 pretrained COCO `yolov8n.pt`.
