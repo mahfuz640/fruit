@@ -8,3 +8,5 @@ streamlit-webrtc>=0.47
 av>=12
 pillow>=10
 onnx>=1.16
+
+opencv-python-headless
