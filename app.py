@@ -5,8 +5,12 @@ from pathlib import Path
 
 # Set environment variables for headless OpenCV before any imports
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+os.environ.setdefault("QT_QPA_PLATFORM_PLUGIN_PATH", "/usr/lib/x86_64-linux-gnu/qt5/plugins")
 os.environ.setdefault("DISPLAY", "")
 os.environ.setdefault("OPENCV_HEADLESS", "1")
+os.environ.setdefault("LIBGL_ALWAYS_INDIRECT", "1")
+os.environ.setdefault("LIBVA_DRIVER_NAME", "i965")
+os.environ.setdefault("LIBGL_DRIVERS_PATH", "/usr/lib/x86_64-linux-gnu/dri")
 
 ROOT = Path(__file__).resolve().parent
 os.environ.setdefault("YOLO_CONFIG_DIR", str(ROOT / ".ultralytics"))
