@@ -162,14 +162,24 @@ def classify_image(image: Image.Image, model_path: Path) -> None:
     result = model.predict(np.array(image), imgsz=224, verbose=False)[0]
     probs = result.probs
     summary = classification_summary(result)
+    freshness = str(summary["freshness"])
+    fruit = str(summary["fruit"])
+    confidence = float(summary["confidence"])
+
+    if freshness == "Fresh":
+        st.success(f"Result: Fresh {fruit} ({confidence:.1%} confidence)")
+    elif freshness == "Spoiled":
+        st.error(f"Result: Spoiled {fruit} ({confidence:.1%} confidence)")
+    else:
+        st.info(f"Result: {summary['display_class']} ({confidence:.1%} confidence)")
 
     metric_freshness, metric_fruit, metric_class = st.columns(3)
     metric_freshness.metric(
         "Freshness",
-        str(summary["freshness"]),
-        f"{float(summary['confidence']):.1%}",
+        freshness,
+        f"{confidence:.1%}",
     )
-    metric_fruit.metric("Fruit", str(summary["fruit"]))
+    metric_fruit.metric("Fruit", fruit)
     metric_class.metric("Model class", str(summary["display_class"]))
 
     if summary["freshness"] == "Unknown":
@@ -244,7 +254,7 @@ def main() -> None:
         st.error("YOLO dependencies not available. The app cannot function without ultralytics.")
         st.stop()
 
-    mode = st.sidebar.radio("Mode", ["Spoilage classifier", "Fruit detector"], index=1)
+    mode = st.sidebar.radio("Mode", ["Spoilage classifier", "Fruit detector"])
     confidence = st.sidebar.slider("Confidence", 0.10, 0.90, 0.35, 0.05)
 
     model_path = CLASSIFY_MODEL if mode == "Spoilage classifier" else DETECT_MODEL
@@ -285,18 +295,31 @@ def main() -> None:
                     detect_image(image, model_path, confidence)
 
     with tab_live:
-        live_model_missing = not DETECT_MODEL.exists()
+        live_mode = "classify" if mode == "Spoilage classifier" else "detect"
+        live_model_path = CLASSIFY_MODEL if live_mode == "classify" else DETECT_MODEL
+        live_model_missing = not live_model_path.exists()
+
         if live_model_missing:
-            st.error(f"Model not found: {DETECT_MODEL}. Run: python scripts/download_models.py")
+            if live_mode == "classify":
+                st.error(
+                    "Fresh/Spoiled live camera needs the trained spoilage classifier model."
+                )
+                st.code(
+                    "python scripts/prepare_dataset.py\n"
+                    "python scripts/train_spoilage_classifier.py --epochs 15 --device cpu",
+                    language="bash",
+                )
+            else:
+                st.error(f"Model not found: {live_model_path}. Run: python scripts/download_models.py")
         elif webrtc_streamer is None:
             st.error(f"Live camera dependency error: {WEBRTC_IMPORT_ERROR}")
             st.code("python -m pip install -r requirements.txt", language="bash")
         else:
             webrtc_streamer(
-                key=f"fruit-live-detector-{DETECT_MODEL.name}",
+                key=f"fruit-live-{live_mode}-{live_model_path.name}",
                 video_processor_factory=lambda: FruitVideoProcessor(
-                    "detect",
-                    str(DETECT_MODEL),
+                    live_mode,
+                    str(live_model_path),
                     confidence,
                 ),
                 media_stream_constraints={
