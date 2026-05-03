@@ -1,6 +1,6 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.5.1+cpu
-torchvision==0.20.1+cpu
+torch==2.11.0+cpu
+torchvision==0.26.0+cpu
 ultralytics>=8.3,<8.5
 opencv-python-headless>=4.10
 streamlit>=1.40
@@ -8,5 +8,3 @@ streamlit-webrtc>=0.47
 av>=12
 pillow>=10
 onnx>=1.16
-
-opencv-python-headless
