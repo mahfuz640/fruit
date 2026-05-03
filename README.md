@@ -38,6 +38,21 @@ Run the Streamlit app:
 streamlit run app.py
 ```
 
+The app has three tabs:
+
+- About: project purpose, usage, and developer information
+- Camera / upload: take a photo or upload an image for prediction
+- Live camera: run real-time browser-camera prediction
+
+Fresh/Spoiled prediction needs the trained classifier at
+`models/fruit_spoilage_yolov8n_cls.pt`. If it is missing, prepare the dataset and
+train it first:
+
+```bash
+python scripts/prepare_dataset.py
+python scripts/train_spoilage_classifier.py --epochs 15 --device cpu
+```
+
 Run OpenCV webcam:
 
 ```bash
@@ -54,7 +69,8 @@ python scripts/webcam_detect.py --mode detect
 - Models are loaded from the `models/` directory
 
 Important: `dataset.zip` is an image classification dataset, not a YOLO bounding-box
-detection dataset. Fresh/rotten prediction uses `yolov8n-cls.pt`; object boxes use the
+detection dataset. Fresh/rotten prediction fine-tunes `yolov8n-cls.pt` and saves the
+trained classifier as `models/fruit_spoilage_yolov8n_cls.pt`; object boxes use the
 pretrained COCO `yolov8n.pt`.
 
 sudo apt update

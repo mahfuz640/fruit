@@ -5,6 +5,7 @@ ultralytics>=8.3,<8.5
 opencv-python-headless>=4.10
 streamlit>=1.40
 streamlit-webrtc>=0.47
+tornado>=6.4
 av>=12
 pillow>=10
 onnx>=1.16

@@ -10,23 +10,59 @@ import cv2
 ROOT = Path(__file__).resolve().parents[1]
 DETECT_MODEL = ROOT / "models" / "yolov8n.pt"
 CLASSIFY_MODEL = ROOT / "models" / "fruit_spoilage_yolov8n_cls.pt"
-BASE_CLASSIFY_MODEL = ROOT / "models" / "yolov8n-cls.pt"
-os.environ.setdefault("YOLO_CONFIG_DIR", str(ROOT / ".ultralytics"))
+ULTRALYTICS_CONFIG_DIR = ROOT / ".ultralytics"
+ULTRALYTICS_CONFIG_DIR.mkdir(exist_ok=True)
+os.environ.setdefault("YOLO_CONFIG_DIR", str(ULTRALYTICS_CONFIG_DIR))
 
 from ultralytics import YOLO
+
+FRESH_MARKERS = ("fresh",)
+SPOILED_MARKERS = ("rotten", "spoiled", "mold", "mould", "decay", "bad")
+FRUIT_NAME_FIXES = {
+    "apple": "Apple",
+    "banana": "Banana",
+    "bittergourd": "Bitter Gourd",
+    "carrot": "Carrot",
+    "cucumber": "Cucumber",
+    "mango": "Mango",
+    "orange": "Orange",
+    "potato": "Potato",
+    "tomato": "Tomato",
+}
 
 
 def default_model(mode: str) -> Path:
     if mode == "detect":
         return DETECT_MODEL
-    return CLASSIFY_MODEL if CLASSIFY_MODEL.exists() else BASE_CLASSIFY_MODEL
+    return CLASSIFY_MODEL
+
+
+def infer_freshness(class_name: str) -> str:
+    normalized = class_name.lower().replace("_", "").replace("-", "").replace(" ", "")
+    if any(marker in normalized for marker in SPOILED_MARKERS):
+        return "Spoiled"
+    if any(marker in normalized for marker in FRESH_MARKERS):
+        return "Fresh"
+    return "Unknown"
+
+
+def infer_fruit_name(class_name: str) -> str:
+    normalized = class_name.lower().replace("_", "").replace("-", "").replace(" ", "")
+    for marker in (*SPOILED_MARKERS, *FRESH_MARKERS):
+        normalized = normalized.replace(marker, "")
+    return FRUIT_NAME_FIXES.get(normalized, class_name.replace("_", " ").replace("-", " ").title())
 
 
 def classification_label(result) -> str:
     probs = result.probs
     class_id = int(probs.top1)
     confidence = float(probs.top1conf)
-    return f"{result.names[class_id]} {confidence:.2f}"
+    class_name = str(result.names[class_id])
+    freshness = infer_freshness(class_name)
+    fruit = infer_fruit_name(class_name)
+    if freshness == "Unknown":
+        return f"{fruit} {confidence:.2f}"
+    return f"{freshness}: {fruit} {confidence:.2f}"
 
 
 def main() -> None:
@@ -40,6 +76,12 @@ def main() -> None:
 
     model_path = Path(args.model) if args.model else default_model(args.mode)
     if not model_path.exists():
+        if args.mode == "classify":
+            raise FileNotFoundError(
+                f"Spoilage classifier model not found: {model_path}. "
+                "Run python scripts/prepare_dataset.py, then "
+                "python scripts/train_spoilage_classifier.py --epochs 15 --device cpu."
+            )
         raise FileNotFoundError(f"Model not found: {model_path}. Run python scripts/download_models.py first.")
 
     model = YOLO(str(model_path))
