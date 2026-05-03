@@ -244,7 +244,7 @@ def main() -> None:
         st.error("YOLO dependencies not available. The app cannot function without ultralytics.")
         st.stop()
 
-    mode = st.sidebar.radio("Mode", ["Spoilage classifier", "Fruit detector"])
+    mode = st.sidebar.radio("Mode", ["Spoilage classifier", "Fruit detector"], index=1)
     confidence = st.sidebar.slider("Confidence", 0.10, 0.90, 0.35, 0.05)
 
     model_path = CLASSIFY_MODEL if mode == "Spoilage classifier" else DETECT_MODEL
@@ -285,17 +285,18 @@ def main() -> None:
                     detect_image(image, model_path, confidence)
 
     with tab_live:
-        if model_missing:
-            st.warning("Add the selected model first, then start the live camera.")
+        live_model_missing = not DETECT_MODEL.exists()
+        if live_model_missing:
+            st.error(f"Model not found: {DETECT_MODEL}. Run: python scripts/download_models.py")
         elif webrtc_streamer is None:
             st.error(f"Live camera dependency error: {WEBRTC_IMPORT_ERROR}")
             st.code("python -m pip install -r requirements.txt", language="bash")
         else:
             webrtc_streamer(
-                key=f"fruit-live-{mode.lower().replace(' ', '-')}-{model_path.name}",
+                key=f"fruit-live-detector-{DETECT_MODEL.name}",
                 video_processor_factory=lambda: FruitVideoProcessor(
-                    "classify" if mode == "Spoilage classifier" else "detect",
-                    str(model_path),
+                    "detect",
+                    str(DETECT_MODEL),
                     confidence,
                 ),
                 media_stream_constraints={
@@ -303,6 +304,7 @@ def main() -> None:
                     "audio": False,
                 },
                 rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
+                desired_playing_state=True,
                 async_processing=True,
             )
 
